@@ -31,18 +31,9 @@ export default function FlowVisualizer({ isSafe }: FlowVisualizerProps) {
               {/* Flowing particles */}
               <div className="flex-1 relative h-2 bg-gray-700 rounded-full overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 rounded-full animate-pulse"></div>
-                <div
-                  className="absolute top-0 left-0 w-4 h-2 bg-green-300 rounded-full animate-bounce"
-                  style={{ animationDelay: "0s" }}
-                ></div>
-                <div
-                  className="absolute top-0 left-8 w-3 h-2 bg-green-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.5s" }}
-                ></div>
-                <div
-                  className="absolute top-0 left-16 w-2 h-2 bg-green-500 rounded-full animate-bounce"
-                  style={{ animationDelay: "1s" }}
-                ></div>
+                <div className="absolute top-0 left-0 w-4 h-2 bg-green-300 rounded-full animate-bounce animation-delay-0"></div>
+                <div className="absolute top-0 left-8 w-3 h-2 bg-green-400 rounded-full animate-bounce animation-delay-500"></div>
+                <div className="absolute top-0 left-16 w-2 h-2 bg-green-500 rounded-full animate-bounce animation-delay-1000"></div>
               </div>
 
               <div className="relative">
@@ -71,10 +62,7 @@ export default function FlowVisualizer({ isSafe }: FlowVisualizerProps) {
                   </div>
                   {/* Stuck particles */}
                   <div className="absolute top-2 left-2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-                  <div
-                    className="absolute bottom-2 right-2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"
-                    style={{ animationDelay: "0.5s" }}
-                  ></div>
+                  <div className="absolute bottom-2 right-2 w-2 h-2 bg-yellow-400 rounded-full animate-pulse animation-delay-500"></div>
                 </div>
               </div>
 

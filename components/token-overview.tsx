@@ -18,6 +18,14 @@ export default function TokenOverview({ tokenData }: TokenOverviewProps) {
   console.log('TokenOverview metadata:', metadata)
   console.log('Token logo URL:', metadata.tokenLogo)
 
+  // Safe fallbacks for missing data
+  const tokenName = metadata?.name || 'Unknown Token'
+  const tokenSymbol = metadata?.symbol || 'UNKNOWN'
+  const tokenAddress = metadata?.address || ''
+  const tokenLogo = metadata?.tokenLogo || "/placeholder.svg"
+  const usdPrice = price?.usdPrice || 0
+  const nativePrice = price?.nativePrice || 0
+
   return (
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
@@ -29,8 +37,8 @@ export default function TokenOverview({ tokenData }: TokenOverviewProps) {
           <div className="flex items-center gap-4">
             <div className="relative">
               <Image
-                src={metadata.tokenLogo || "/placeholder.svg"}
-                alt={`${metadata.name} logo`}
+                src={tokenLogo}
+                alt={`${tokenName} logo`}
                 width={64}
                 height={64}
                 className="rounded-full border-2 border-gray-700"
@@ -42,11 +50,13 @@ export default function TokenOverview({ tokenData }: TokenOverviewProps) {
               />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-white">{metadata.name}</h3>
-              <p className="text-gray-300 text-lg">{metadata.symbol}</p>
-              <p className="text-gray-400 text-sm font-mono">
-                {metadata.address.slice(0, 10)}...{metadata.address.slice(-8)}
-              </p>
+              <h3 className="text-2xl font-bold text-white">{tokenName}</h3>
+              <p className="text-gray-300 text-lg">{tokenSymbol}</p>
+              {tokenAddress && (
+                <p className="text-gray-400 text-sm font-mono">
+                  {tokenAddress.slice(0, 10)}...{tokenAddress.slice(-8)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -55,13 +65,13 @@ export default function TokenOverview({ tokenData }: TokenOverviewProps) {
             <div className="bg-gray-900 p-4 rounded-lg">
               <p className="text-gray-400 text-sm">USD Price</p>
               <p className="text-white text-2xl font-bold">
-                ${price.usdPrice > 0 ? price.usdPrice.toLocaleString() : 'N/A'}
+                {usdPrice > 0 ? `$${usdPrice.toLocaleString(undefined, { maximumFractionDigits: 6 })}` : 'N/A'}
               </p>
             </div>
             <div className="bg-gray-900 p-4 rounded-lg">
               <p className="text-gray-400 text-sm">Native Price</p>
               <p className="text-white text-2xl font-bold">
-                {price.nativePrice > 0 ? `${(price.nativePrice).toFixed(6)} ETH` : 'N/A'}
+                {nativePrice > 0 ? `${nativePrice.toLocaleString(undefined, { maximumFractionDigits: 6 })} ETH` : 'N/A'}
               </p>
             </div>
           </div>
@@ -85,15 +95,17 @@ export default function TokenOverview({ tokenData }: TokenOverviewProps) {
               )}
             </Badge>
             <p className="mt-2 text-gray-400 text-sm">Risk Score: {riskScore}/100</p>
-            <a 
-              href={`https://etherscan.io/token/${metadata.address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
-            >
-              View on Etherscan
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            {tokenAddress && (
+              <a 
+                href={`https://etherscan.io/token/${tokenAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+              >
+                View on Etherscan
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            )}
           </div>
         </div>
       </CardContent>

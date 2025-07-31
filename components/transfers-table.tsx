@@ -13,12 +13,19 @@ export default function TransfersTable({ tokenData }: TransfersTableProps) {
   const { transfers, metadata } = tokenData
 
   const truncateAddress = (address: string) => {
+    if (!address) return 'Unknown'
     return `${address.slice(0, 6)}...${address.slice(-4)}`
   }
 
   const formatValue = (value: string) => {
-    const num = Number.parseFloat(value) / Math.pow(10, metadata.decimals)
-    return num.toLocaleString(undefined, { maximumFractionDigits: 4 })
+    if (!value || !metadata?.decimals) return '0'
+    try {
+      const num = Number.parseFloat(value) / Math.pow(10, metadata.decimals)
+      return num.toLocaleString(undefined, { maximumFractionDigits: 4 })
+    } catch (error) {
+      console.warn('Error formatting value:', value, error)
+      return '0'
+    }
   }
 
   const formatTimestamp = (timestamp: string) => {
@@ -59,13 +66,32 @@ export default function TransfersTable({ tokenData }: TransfersTableProps) {
     }
   }
 
+  // Handle empty transfers
+  if (!transfers || transfers.length === 0) {
+    return (
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white text-xl flex items-center gap-2">
+            <ArrowRight className="h-5 w-5" />
+            Recent Transfers
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <p className="text-gray-400">No transfer data available for this token</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-white text-xl flex items-center gap-2">
             <ArrowRight className="h-5 w-5" />
-            Recent Transfers
+            Recent Transfers ({transfers.length})
           </CardTitle>
           <Button
             variant="outline"
@@ -92,7 +118,7 @@ export default function TransfersTable({ tokenData }: TransfersTableProps) {
             </thead>
             <tbody>
               {transfers.map((transfer, index) => (
-                <tr key={transfer.transaction_hash +" "+index} className="border-b border-gray-800 hover:bg-gray-900/50">
+                <tr key={`${transfer.transaction_hash}-${index}`} className="border-b border-gray-800 hover:bg-gray-900/50">
                   <td className="py-4">
                     <div className="font-mono text-sm text-white">{truncateAddress(transfer.from_address)}</div>
                   </td>
@@ -109,15 +135,21 @@ export default function TransfersTable({ tokenData }: TransfersTableProps) {
                     <div className="text-gray-300 text-sm">{formatTimestamp(transfer.timestamp)}</div>
                   </td>
                   <td className="py-4 text-center">
-                    <a
-                      href={`https://etherscan.io/tx/${transfer.transaction_hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-700">
-                        <ExternalLink className="h-4 w-4 text-blue-400" />
-                      </Button>
-                    </a>
+                    {transfer.transaction_hash ? (
+                      <a
+                        href={`https://etherscan.io/tx/${transfer.transaction_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="View transaction on Etherscan"
+                        aria-label="View transaction on Etherscan"
+                      >
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-gray-700">
+                          <ExternalLink className="h-4 w-4 text-blue-400" />
+                        </Button>
+                      </a>
+                    ) : (
+                      <span className="text-gray-500 text-xs">N/A</span>
+                    )}
                   </td>
                 </tr>
               ))}

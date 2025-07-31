@@ -153,3 +153,16 @@ html {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* Animation delay utilities for flow visualizer */
+.animation-delay-0 {
+  animation-delay: 0s;
+}
+
+.animation-delay-500 {
+  animation-delay: 0.5s;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
+}

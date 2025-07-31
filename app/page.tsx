@@ -157,6 +157,8 @@ export default function Home() {
                   <button
                     onClick={() => setIsMenuOpen(false)}
                     className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center hover:bg-gray-700 transition-colors"
+                    title="Close menu"
+                    aria-label="Close menu"
                   >
                     <X className="w-4 h-4 text-white" />
                   </button>
@@ -504,7 +506,7 @@ export default function Home() {
             </span>
           </div>
           <p className="text-gray-400">
-            © 2024 RugRadar. Built with ❤️ for the Web3 community.
+            © 2025 RugRadar. Built with ❤️ by ART_Redox for the Web3 community.
           </p>
         </div>
       </footer>
