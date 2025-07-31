@@ -14,7 +14,7 @@ import { useTokenAnalysis } from "@/hooks/use-token-analysis"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Info, Bug, TestTube } from "lucide-react"
 import Logo from '@/components/logo'
-import { testAPIFromBrowser, testTransferAndHolderAccuracy } from "@/lib/test-api"
+import { testAPIFromBrowser, testTransferAndHolderAccuracy, testImprovedAnalysis } from "@/lib/test-api"
 
 export default function Dashboard() {
   const { tokenData, isLoading, error, analyzeToken, reset } = useTokenAnalysis()
@@ -24,6 +24,8 @@ export default function Dashboard() {
   const [isTesting, setIsTesting] = useState(false)
   const [accuracyTestResult, setAccuracyTestResult] = useState<any>(null)
   const [isAccuracyTesting, setIsAccuracyTesting] = useState(false)
+  const [improvedTestResult, setImprovedTestResult] = useState<any>(null)
+  const [isImprovedTesting, setIsImprovedTesting] = useState(false)
 
   const handleSearch = async (address: string) => {
     setTokenAddress(address)
@@ -64,6 +66,22 @@ export default function Dashboard() {
       })
     } finally {
       setIsAccuracyTesting(false)
+    }
+  }
+
+  const handleImprovedTest = async () => {
+    setIsImprovedTesting(true)
+    setImprovedTestResult(null)
+    try {
+      const result = await testImprovedAnalysis()
+      setImprovedTestResult(result)
+    } catch (error) {
+      setImprovedTestResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+    } finally {
+      setIsImprovedTesting(false)
     }
   }
 
@@ -120,6 +138,15 @@ export default function Dashboard() {
               </button>
               
               <button
+                onClick={handleImprovedTest}
+                disabled={isImprovedTesting}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded-lg transition-colors"
+              >
+                <TestTube className="h-4 w-4" />
+                {isImprovedTesting ? 'Testing Analysis...' : 'Test Improved Analysis'}
+              </button>
+              
+              <button
                 onClick={() => setShowDebug(!showDebug)}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
               >
@@ -129,7 +156,7 @@ export default function Dashboard() {
             </div>
 
             {/* Test Results */}
-            {(testResult || accuracyTestResult) && (
+            {(testResult || accuracyTestResult || improvedTestResult) && (
               <div className="mt-4 space-y-4">
                 {testResult && (
                   <Alert className={testResult.success ? "bg-green-900/20 border-green-600/30" : "bg-red-900/20 border-red-600/30"}>
@@ -145,6 +172,15 @@ export default function Dashboard() {
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription className={accuracyTestResult.success ? "text-green-300" : "text-red-300"}>
                       {accuracyTestResult.success ? '✅ Data accuracy test completed! Check console for details.' : `❌ Accuracy Test Error: ${accuracyTestResult.error}`}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {improvedTestResult && (
+                  <Alert className={improvedTestResult.success ? "bg-green-900/20 border-green-600/30" : "bg-red-900/20 border-red-600/30"}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className={improvedTestResult.success ? "text-green-300" : "text-red-300"}>
+                      {improvedTestResult.success ? '✅ Improved analysis test completed! Check console for details.' : `❌ Improved Analysis Error: ${improvedTestResult.error}`}
                     </AlertDescription>
                   </Alert>
                 )}

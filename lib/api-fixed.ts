@@ -130,10 +130,10 @@ class MoralisAPIFixed {
         console.warn('Failed to get token decimals, using default 18:', error)
       }
 
-      // Try to get real transfer count first - using limit 100 (max allowed)
+      // Get real transfer data - use limit 100 (max allowed by Moralis free tier)
       let totalTransfers = 0
+      let isEstimated = false
       try {
-        // Use limit 100 (maximum allowed by Moralis free tier)
         const transfersSample = await this.makeRequest<{ total?: number, result: any[] }>(`/erc20/${address}/transfers?chain=${chain}&limit=100`)
         console.log('Transfer sample response:', {
           hasTotal: !!transfersSample.total,
@@ -147,52 +147,57 @@ class MoralisAPIFixed {
           } : 'None'
         })
         
-        if (transfersSample.total) {
+        if (transfersSample.total && transfersSample.total <= 100) {
+          // If total is provided and <= 100, it's likely accurate
           totalTransfers = transfersSample.total
-          console.log('✅ Found real total transfers:', totalTransfers)
+          console.log('✅ Found accurate total transfers:', totalTransfers)
+        } else if (transfersSample.total && transfersSample.total > 100) {
+          // If total > 100, it's likely accurate but we can't verify
+          totalTransfers = transfersSample.total
+          isEstimated = true
+          console.log('⚠️ Total transfers provided but may be estimated:', totalTransfers)
         } else if (transfersSample.result && transfersSample.result.length > 0) {
-          // If no total provided, use a more conservative estimation
+          // No total provided, use sample size as minimum
           const sampleSize = transfersSample.result.length
           const isWellKnown = ['USDT', 'USDC', 'DAI', 'WETH', 'WBTC', 'AAVE'].includes(address.toUpperCase())
           
-          // More realistic estimation based on sample size
+          // More conservative estimation
           if (isWellKnown) {
             // For well-known tokens, if we get 100 transfers in recent history, 
-            // the total is likely much higher but not 1000x
-            totalTransfers = Math.max(sampleSize * 50, 50000)
+            // estimate conservatively
+            totalTransfers = Math.max(sampleSize * 20, 5000) // Much more conservative
           } else {
-            // For unknown tokens, be more conservative
-            totalTransfers = Math.max(sampleSize * 10, 1000)
+            // For unknown tokens, be very conservative
+            totalTransfers = Math.max(sampleSize * 5, 500) // Very conservative
           }
-          console.log('📊 Estimated total transfers from sample:', totalTransfers)
+          isEstimated = true
+          console.log('📊 Estimated total transfers from sample:', totalTransfers, '(conservative estimate)')
         }
       } catch (error) {
         console.warn('Failed to get transfer count:', error)
       }
 
-      // Try to get real holder count - using transfer-based estimation since /owners endpoint doesn't exist
+      // Estimate holder count more conservatively
       let totalHolders = 0
       try {
-        // Since /owners endpoint doesn't exist in Moralis API, estimate from transfer data
         if (totalTransfers > 0) {
           const isWellKnown = ['USDT', 'USDC', 'DAI', 'WETH', 'WBTC', 'AAVE'].includes(address.toUpperCase())
           
-          // More realistic holder estimation
+          // Much more conservative holder estimation
           if (isWellKnown) {
-            // Well-known tokens typically have many more transfers than holders
-            // A reasonable ratio is 1 holder per 100-500 transfers
-            totalHolders = Math.min(Math.floor(totalTransfers / 200), 500000)
+            // Well-known tokens: 1 holder per 500-1000 transfers
+            totalHolders = Math.min(Math.floor(totalTransfers / 750), 100000)
           } else {
-            // For unknown tokens, use a more conservative ratio
-            totalHolders = Math.min(Math.floor(totalTransfers / 50), 100000)
+            // Unknown tokens: 1 holder per 100-200 transfers
+            totalHolders = Math.min(Math.floor(totalTransfers / 150), 50000)
           }
-          console.log('📊 Estimated total holders from transfers:', totalHolders)
+          console.log('📊 Estimated total holders from transfers:', totalHolders, '(conservative estimate)')
         }
       } catch (error) {
         console.warn('Failed to estimate holder count:', error)
       }
 
-      // Calculate 24h volume from recent transfers
+      // Calculate 24h volume from recent transfers (more accurate)
       let volume24h = 0
       let transferCount24h = 0
       
@@ -223,22 +228,23 @@ class MoralisAPIFixed {
             }
           })
         }
+        
+        console.log('📊 24h volume calculation:', {
+          volume24h,
+          transferCount24h,
+          sampleSize: recentTransfers.result?.length || 0
+        })
       } catch (error) {
         console.warn('Failed to calculate 24h volume:', error)
       }
 
-      // Try to get liquidity data (this might not be available from Moralis)
+      // Liquidity data is not available from Moralis
       let totalLiquidity = 0
-      try {
-        // Note: Moralis doesn't provide direct liquidity data
-        // This would need to be fetched from DEX APIs like Uniswap
-        console.log('⚠️ Liquidity data not available from Moralis API')
-      } catch (error) {
-        console.warn('Failed to get liquidity data:', error)
-      }
+      console.log('⚠️ Liquidity data not available from Moralis API - would need DEX integration')
 
       console.log('📊 Final calculated stats:', {
         total_transfers: totalTransfers,
+        is_estimated: isEstimated,
         total_holders: totalHolders,
         volume_24h: volume24h,
         transfer_count_24h: transferCount24h,
@@ -276,7 +282,8 @@ class MoralisAPIFixed {
       console.log('📊 Using transfer-based holder estimation (no /owners endpoint available)')
       const transfers = await this.makeRequest<{ result: any[] }>(`/erc20/${address}/transfers?chain=${chain}&limit=100`)
       
-      const holders = new Map<string, { value: number, count: number, lastActivity: number }>()
+      // Track actual token balances for each address
+      const balances = new Map<string, { balance: number, lastActivity: number }>()
       
       if (transfers.result) {
         transfers.result.forEach(transfer => {
@@ -294,47 +301,49 @@ class MoralisAPIFixed {
             transferTime = new Date(transfer.timestamp).getTime()
           }
           
+          // Update sender balance (decrease)
           if (fromAddr && fromAddr !== '0x0000000000000000000000000000000000000000') {
-            const current = holders.get(fromAddr) || { value: 0, count: 0, lastActivity: 0 }
-            holders.set(fromAddr, { 
-              value: current.value + value, 
-              count: current.count + 1,
+            const current = balances.get(fromAddr) || { balance: 0, lastActivity: 0 }
+            balances.set(fromAddr, { 
+              balance: Math.max(0, current.balance - value), // Don't go negative
               lastActivity: Math.max(current.lastActivity, transferTime)
             })
           }
           
+          // Update receiver balance (increase)
           if (toAddr && toAddr !== '0x0000000000000000000000000000000000000000') {
-            const current = holders.get(toAddr) || { value: 0, count: 0, lastActivity: 0 }
-            holders.set(toAddr, { 
-              value: current.value + value, 
-              count: current.count + 1,
+            const current = balances.get(toAddr) || { balance: 0, lastActivity: 0 }
+            balances.set(toAddr, { 
+              balance: current.balance + value,
               lastActivity: Math.max(current.lastActivity, transferTime)
             })
           }
         })
       }
       
-      // Calculate total value and filter out very old inactive addresses
+      // Filter out addresses with zero balance and very old inactive addresses
       const now = Date.now()
       const oneMonthAgo = now - (30 * 24 * 60 * 60 * 1000)
       
-      const activeHolders = Array.from(holders.entries())
-        .filter(([_, data]) => data.lastActivity > oneMonthAgo) // Only include addresses active in last month
-        .sort((a, b) => b[1].value - a[1].value)
+      const activeHolders = Array.from(balances.entries())
+        .filter(([_, data]) => data.balance > 0 && data.lastActivity > oneMonthAgo) // Only include addresses with positive balance and active in last month
+        .sort((a, b) => b[1].balance - a[1].balance)
         .slice(0, limit)
       
-      const totalValue = activeHolders.reduce((sum, [_, data]) => sum + data.value, 0)
+      const totalBalance = activeHolders.reduce((sum, [_, data]) => sum + data.balance, 0)
       
       const holderArray = activeHolders.map(([address, data]) => ({
         owner_address: address,
-        balance: data.value.toString(),
-        share: totalValue > 0 ? (data.value / totalValue) * 100 : 0
+        balance: data.balance.toString(),
+        share: totalBalance > 0 ? (data.balance / totalBalance) * 100 : 0
       }))
       
       console.log('📊 Estimated holders from transfers:', {
-        totalUniqueAddresses: holders.size,
+        totalUniqueAddresses: balances.size,
         activeAddresses: activeHolders.length,
-        topHolders: holderArray.length
+        topHolders: holderArray.length,
+        totalBalance: totalBalance,
+        topHolderShare: holderArray[0]?.share || 0
       })
       
       return holderArray
@@ -491,62 +500,112 @@ class MoralisAPIFixed {
       riskFactors.push('Token flagged as possible spam')
     }
 
-    // Check holder concentration
-    const topHolderShare = holders[0]?.share || 0
-    if (topHolderShare > 50) {
-      riskScore += 25
-      riskFactors.push('High concentration in top holder')
-    } else if (topHolderShare > 20) {
-      riskScore += 15
-      riskFactors.push('Moderate concentration in top holder')
+    // Check holder concentration - more accurate calculation
+    if (holders.length > 0) {
+      const topHolderShare = holders[0]?.share || 0
+      const top5HolderShare = holders.slice(0, 5).reduce((sum, holder) => sum + (holder.share || 0), 0)
+      
+      console.log('📊 Holder concentration analysis:', {
+        topHolderShare: topHolderShare.toFixed(2) + '%',
+        top5HolderShare: top5HolderShare.toFixed(2) + '%',
+        totalHolders: holders.length
+      })
+      
+      if (topHolderShare > 50) {
+        riskScore += 35
+        riskFactors.push(`Extremely high concentration: Top holder controls ${topHolderShare.toFixed(1)}%`)
+      } else if (topHolderShare > 20) {
+        riskScore += 25
+        riskFactors.push(`High concentration: Top holder controls ${topHolderShare.toFixed(1)}%`)
+      } else if (topHolderShare > 10) {
+        riskScore += 15
+        riskFactors.push(`Moderate concentration: Top holder controls ${topHolderShare.toFixed(1)}%`)
+      }
+      
+      if (top5HolderShare > 80) {
+        riskScore += 20
+        riskFactors.push(`Top 5 holders control ${top5HolderShare.toFixed(1)}% - Very concentrated`)
+      } else if (top5HolderShare > 60) {
+        riskScore += 10
+        riskFactors.push(`Top 5 holders control ${top5HolderShare.toFixed(1)}% - Moderately concentrated`)
+      }
     }
 
     // Check for well-known tokens
     const isWellKnownToken = ['USDT', 'USDC', 'DAI', 'WETH', 'WBTC', 'AAVE'].includes(metadata.symbol?.toUpperCase() || '')
     
     if (isWellKnownToken) {
-      riskScore = Math.max(0, riskScore - 30)
-      riskFactors.push('Well-known token - lower risk')
+      riskScore = Math.max(0, riskScore - 40) // Well-known tokens get significant risk reduction
+      riskFactors.push('Well-known token - significantly lower risk')
     } else {
       // For unknown tokens, check holder count
-      if (stats.total_holders < 100) {
-        riskScore += 20
-        riskFactors.push('Very few token holders')
+      if (stats.total_holders < 50) {
+        riskScore += 25
+        riskFactors.push('Very few token holders (< 50)')
+      } else if (stats.total_holders < 200) {
+        riskScore += 15
+        riskFactors.push('Low number of token holders (< 200)')
       } else if (stats.total_holders < 1000) {
-        riskScore += 10
-        riskFactors.push('Low number of token holders')
+        riskScore += 8
+        riskFactors.push('Moderate number of token holders (< 1000)')
       }
     }
 
-    // Check transfer activity
+    // Check transfer activity - more conservative thresholds
     if (isWellKnownToken) {
-      if (stats.total_transfers > 1000000) {
+      if (stats.total_transfers > 100000) {
         riskScore = Math.max(0, riskScore - 10)
         riskFactors.push('High transfer activity - typical for established tokens')
       }
     } else {
-      if (stats.total_transfers < 100) {
+      if (stats.total_transfers < 20) {
+        riskScore += 25
+        riskFactors.push('Very low transfer activity (< 20 transfers)')
+      } else if (stats.total_transfers < 100) {
         riskScore += 15
-        riskFactors.push('Very low transfer activity')
-      } else if (stats.total_transfers < 1000) {
+        riskFactors.push('Low transfer activity (< 100 transfers)')
+      } else if (stats.total_transfers < 500) {
         riskScore += 8
-        riskFactors.push('Low transfer activity')
+        riskFactors.push('Moderate transfer activity (< 500 transfers)')
       }
     }
 
-    // Check liquidity
-    if (!isWellKnownToken) {
-      if (stats.total_liquidity < 10000) {
-        riskScore += 20
-        riskFactors.push('Very low liquidity')
-      } else if (stats.total_liquidity < 100000) {
+    // Check liquidity (if available)
+    if (!isWellKnownToken && stats.total_liquidity > 0) {
+      if (stats.total_liquidity < 5000) {
+        riskScore += 25
+        riskFactors.push('Very low liquidity (< $5,000)')
+      } else if (stats.total_liquidity < 50000) {
+        riskScore += 15
+        riskFactors.push('Low liquidity (< $50,000)')
+      } else if (stats.total_liquidity < 200000) {
+        riskScore += 8
+        riskFactors.push('Moderate liquidity (< $200,000)')
+      }
+    } else if (!isWellKnownToken) {
+      riskScore += 10
+      riskFactors.push('Liquidity data unavailable - proceed with caution')
+    }
+
+    // Check 24h volume
+    if (stats.volume_24h > 0) {
+      if (stats.volume_24h < 1000) {
         riskScore += 10
-        riskFactors.push('Low liquidity')
+        riskFactors.push('Very low 24h volume (< $1,000)')
+      } else if (stats.volume_24h < 10000) {
+        riskScore += 5
+        riskFactors.push('Low 24h volume (< $10,000)')
       }
     }
 
     // Normalize risk score to 0-100
-    riskScore = Math.min(riskScore, 100)
+    riskScore = Math.min(Math.max(riskScore, 0), 100)
+
+    console.log('📊 Risk analysis completed:', {
+      finalScore: riskScore,
+      factors: riskFactors,
+      isWellKnown: isWellKnownToken
+    })
 
     return { score: riskScore, factors: riskFactors }
   }

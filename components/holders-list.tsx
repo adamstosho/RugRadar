@@ -120,9 +120,46 @@ export default function HoldersList({ tokenData }: HoldersListProps) {
             <p className="text-gray-300 text-sm mt-1">
               Top {holders.length} holders control {totalShare.toFixed(1)}% of total supply
             </p>
-            {totalShare > 80 && (
-              <p className="text-red-400 text-xs mt-1">
+            
+            {/* Detailed concentration breakdown */}
+            <div className="mt-2 space-y-1">
+              {holders.length > 0 && (
+                <p className="text-gray-400 text-xs">
+                  • Top holder: {holders[0].share.toFixed(2)}% of supply
+                </p>
+              )}
+              {holders.length >= 3 && (
+                <p className="text-gray-400 text-xs">
+                  • Top 3 holders: {holders.slice(0, 3).reduce((sum, h) => sum + h.share, 0).toFixed(1)}% of supply
+                </p>
+              )}
+              {holders.length >= 5 && (
+                <p className="text-gray-400 text-xs">
+                  • Top 5 holders: {totalShare.toFixed(1)}% of supply
+                </p>
+              )}
+            </div>
+            
+            {/* Risk assessment */}
+            {totalShare > 90 ? (
+              <p className="text-red-400 text-xs mt-2 font-semibold">
+                🚨 Extremely high concentration - Major risk factor
+              </p>
+            ) : totalShare > 80 ? (
+              <p className="text-red-400 text-xs mt-2 font-semibold">
                 ⚠️ High concentration detected - potential risk factor
+              </p>
+            ) : totalShare > 60 ? (
+              <p className="text-yellow-400 text-xs mt-2 font-semibold">
+                ⚠️ Moderate concentration - monitor closely
+              </p>
+            ) : totalShare > 40 ? (
+              <p className="text-blue-400 text-xs mt-2 font-semibold">
+                ℹ️ Some concentration - typical for smaller tokens
+              </p>
+            ) : (
+              <p className="text-green-400 text-xs mt-2 font-semibold">
+                ✅ Good distribution - low concentration risk
               </p>
             )}
           </div>
