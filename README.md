@@ -92,14 +92,15 @@ Provides total transfers, holders, liquidity, volume, and price change data.
 
 ### Token Holders
 ```
-GET /erc20/{address}/owners?chain=eth&limit=5
+GET /erc20/{address}/transfers?chain=eth&limit=100
 ```
-Returns top token holders with balance and share percentage.
+Returns estimated token holders based on transfer analysis (Moralis doesn't provide direct holder data).
 
 ### Token Transfers
 ```
-GET /erc20/{address}/transfers?chain=eth&limit=20
+GET /erc20/{address}/transfers?chain=eth&limit=100
 ```
+Returns recent token transfers with transaction details (limit 100 max for free tier).
 Fetches recent token transfers with transaction details.
 
 ### Token Price
@@ -183,9 +184,24 @@ async getCustomData(address: string, chain: string = 'eth') {
 
 The project uses Tailwind CSS with a dark theme. Modify `app/globals.css` or component classes for styling updates.
 
-## 🚨 Disclaimer
+## 🔧 Recent Fixes & API Limitations
 
-This tool is for educational and research purposes only. Always conduct your own research (DYOR) before making investment decisions. The risk analysis is based on available data and should not be considered financial advice.
+### Fixed Issues
+- **404 Error for `/owners` endpoint**: Removed calls to non-existent Moralis endpoint
+- **400 Error for transfer limit**: Reduced limit from 500 to 100 (Moralis free tier maximum)
+- **Holder data estimation**: Now uses transfer-based estimation since direct holder data isn't available
+
+### API Limitations
+- **Transfer limit**: Maximum 100 transfers per request (free tier)
+- **Holder data**: Not directly available from Moralis API, estimated from transfers
+- **Liquidity data**: Not available from Moralis API (requires DEX integration)
+
+### Workarounds
+- Holder count estimated from transfer patterns
+- Transfer totals calculated from available data
+- Risk scoring adjusted for data limitations
+
+## 🚨 Disclaimer
 
 ## 📝 License
 

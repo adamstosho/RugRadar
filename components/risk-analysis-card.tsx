@@ -17,8 +17,8 @@ export default function RiskAnalysisCard({ tokenData }: RiskAnalysisCardProps) {
     return "low"
   }
 
-  const holdersRisk = getRiskLevel(stats.total_holders, { low: 100, medium: 1000 })
-  const liquidityRisk = getRiskLevel(stats.total_liquidity, { low: 10000, medium: 100000 })
+  const holdersRisk = getRiskLevel(stats.total_holders || 0, { low: 100, medium: 1000 })
+  const liquidityRisk = getRiskLevel(stats.total_liquidity || 0, { low: 10000, medium: 100000 })
 
   const getRiskColor = (risk: string) => {
     switch (risk) {
@@ -51,16 +51,16 @@ export default function RiskAnalysisCard({ tokenData }: RiskAnalysisCardProps) {
               </div>
               <div>
                 <p className="text-gray-300">Total Transfers</p>
-                <p className="text-white text-2xl font-bold">{stats.total_transfers.toLocaleString()}</p>
+                <p className="text-white text-2xl font-bold">{(stats.total_transfers || 0).toLocaleString()}</p>
               </div>
             </div>
             <div className={`text-sm font-semibold ${
-              stats.total_transfers > 1000000 ? "text-green-400" : 
-              stats.total_transfers > 100000 ? "text-yellow-400" : "text-red-400"
+              (stats.total_transfers || 0) > 1000000 ? "text-green-400" : 
+              (stats.total_transfers || 0) > 100000 ? "text-yellow-400" : "text-red-400"
             }`}>
-              {stats.total_transfers > 1000000 ? "✓ Very High Activity" :
-               stats.total_transfers > 100000 ? "✓ High Activity" :
-               stats.total_transfers > 10000 ? "⚠ Moderate Activity" : "🚨 Low Activity"}
+              {(stats.total_transfers || 0) > 1000000 ? "✓ Very High Activity" :
+               (stats.total_transfers || 0) > 100000 ? "✓ High Activity" :
+               (stats.total_transfers || 0) > 10000 ? "⚠ Moderate Activity" : "🚨 Low Activity"}
             </div>
           </div>
 
@@ -72,7 +72,7 @@ export default function RiskAnalysisCard({ tokenData }: RiskAnalysisCardProps) {
               </div>
               <div>
                 <p className="text-gray-300">Token Holders</p>
-                <p className="text-white text-2xl font-bold">{stats.total_holders.toLocaleString()}</p>
+                <p className="text-white text-2xl font-bold">{(stats.total_holders || 0).toLocaleString()}</p>
               </div>
             </div>
             <div className={`text-sm font-semibold ${getRiskColor(holdersRisk)}`}>
@@ -93,12 +93,12 @@ export default function RiskAnalysisCard({ tokenData }: RiskAnalysisCardProps) {
               <div>
                 <p className="text-gray-300">Total Liquidity</p>
                 <p className="text-white text-2xl font-bold">
-                  {stats.total_liquidity > 0 ? `$${stats.total_liquidity.toLocaleString()}` : 'N/A'}
+                  {(stats.total_liquidity || 0) > 0 ? `$${(stats.total_liquidity || 0).toLocaleString()}` : 'N/A'}
                 </p>
               </div>
             </div>
             <div className={`text-sm font-semibold ${getRiskColor(liquidityRisk)}`}>
-              {stats.total_liquidity > 0 ? (
+              {(stats.total_liquidity || 0) > 0 ? (
                 liquidityRisk === "low"
                   ? "✓ High Liquidity"
                   : liquidityRisk === "medium"
@@ -113,14 +113,14 @@ export default function RiskAnalysisCard({ tokenData }: RiskAnalysisCardProps) {
             <div>
               <p className="text-gray-400 text-sm">24h Volume</p>
               <p className="text-white text-lg font-semibold">
-                {stats.volume_24h > 0 ? `$${stats.volume_24h.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : 'N/A'}
+                {(stats.volume_24h || 0) > 0 ? `$${(stats.volume_24h || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}` : 'N/A'}
               </p>
             </div>
             <div>
               <p className="text-gray-400 text-sm">24h Change</p>
-              <p className={`text-lg w-40 truncate font-semibold ${stats.price_change_24h >= 0 ? "text-green-400" : "text-red-400"}`}>
-                {stats.price_change_24h !== 0 ? (
-                  `${stats.price_change_24h >= 0 ? "+" : ""}${stats.price_change_24h.toFixed(6)}%`
+              <p className={`text-lg w-40 truncate font-semibold ${(stats.price_change_24h || 0) >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {stats.price_change_24h !== 0 && stats.price_change_24h !== null && stats.price_change_24h !== undefined ? (
+                  `${(stats.price_change_24h || 0) >= 0 ? "+" : ""}${Number(stats.price_change_24h).toFixed(6)}%`
                 ) : 'N/A'}
               </p>
             </div>

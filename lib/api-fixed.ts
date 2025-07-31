@@ -130,27 +130,39 @@ class MoralisAPIFixed {
         console.warn('Failed to get token decimals, using default 18:', error)
       }
 
-      // Try to get real transfer count first
+      // Try to get real transfer count first - using limit 100 (max allowed)
       let totalTransfers = 0
       try {
-        // Get a larger sample to estimate total transfers more accurately
-        const transfersSample = await this.makeRequest<{ total?: number, result: any[] }>(`/erc20/${address}/transfers?chain=${chain}&limit=500`)
-        console.log('Transfer sample response:', transfersSample)
+        // Use limit 100 (maximum allowed by Moralis free tier)
+        const transfersSample = await this.makeRequest<{ total?: number, result: any[] }>(`/erc20/${address}/transfers?chain=${chain}&limit=100`)
+        console.log('Transfer sample response:', {
+          hasTotal: !!transfersSample.total,
+          total: transfersSample.total,
+          resultCount: transfersSample.result?.length || 0,
+          sampleTransfer: transfersSample.result?.[0] ? {
+            from: transfersSample.result[0].from_address,
+            to: transfersSample.result[0].to_address,
+            value: transfersSample.result[0].value,
+            timestamp: transfersSample.result[0].block_timestamp
+          } : 'None'
+        })
         
         if (transfersSample.total) {
           totalTransfers = transfersSample.total
           console.log('✅ Found real total transfers:', totalTransfers)
         } else if (transfersSample.result && transfersSample.result.length > 0) {
-          // If no total provided, estimate from sample size and recency
+          // If no total provided, use a more conservative estimation
           const sampleSize = transfersSample.result.length
           const isWellKnown = ['USDT', 'USDC', 'DAI', 'WETH', 'WBTC', 'AAVE'].includes(address.toUpperCase())
           
+          // More realistic estimation based on sample size
           if (isWellKnown) {
-            // For well-known tokens, the sample is likely very small compared to total
-            totalTransfers = Math.max(sampleSize * 1000, 1000000)
+            // For well-known tokens, if we get 100 transfers in recent history, 
+            // the total is likely much higher but not 1000x
+            totalTransfers = Math.max(sampleSize * 50, 50000)
           } else {
             // For unknown tokens, be more conservative
-            totalTransfers = Math.max(sampleSize * 100, 1000)
+            totalTransfers = Math.max(sampleSize * 10, 1000)
           }
           console.log('📊 Estimated total transfers from sample:', totalTransfers)
         }
@@ -158,27 +170,26 @@ class MoralisAPIFixed {
         console.warn('Failed to get transfer count:', error)
       }
 
-      // Try to get real holder count
+      // Try to get real holder count - using transfer-based estimation since /owners endpoint doesn't exist
       let totalHolders = 0
       try {
-        // Try the token owners endpoint
-        const holdersResponse = await this.makeRequest<{ total?: number, result: any[] }>(`/erc20/${address}/owners?chain=${chain}&limit=1`)
-        console.log('Holders response:', holdersResponse)
-        
-        if (holdersResponse.total) {
-          totalHolders = holdersResponse.total
-          console.log('✅ Found real total holders:', totalHolders)
-        }
-      } catch (error) {
-        console.warn('Failed to get holder count from owners endpoint:', error)
-        
-        // Fallback: estimate from transfer data
+        // Since /owners endpoint doesn't exist in Moralis API, estimate from transfer data
         if (totalTransfers > 0) {
           const isWellKnown = ['USDT', 'USDC', 'DAI', 'WETH', 'WBTC', 'AAVE'].includes(address.toUpperCase())
-          const ratio = isWellKnown ? 50 : 20
-          totalHolders = Math.min(Math.floor(totalTransfers / ratio), 1000000)
+          
+          // More realistic holder estimation
+          if (isWellKnown) {
+            // Well-known tokens typically have many more transfers than holders
+            // A reasonable ratio is 1 holder per 100-500 transfers
+            totalHolders = Math.min(Math.floor(totalTransfers / 200), 500000)
+          } else {
+            // For unknown tokens, use a more conservative ratio
+            totalHolders = Math.min(Math.floor(totalTransfers / 50), 100000)
+          }
           console.log('📊 Estimated total holders from transfers:', totalHolders)
         }
+      } catch (error) {
+        console.warn('Failed to estimate holder count:', error)
       }
 
       // Calculate 24h volume from recent transfers
@@ -256,39 +267,16 @@ class MoralisAPIFixed {
     }
   }
 
-  // Get token holders - try to get real data first, fallback to transfer-based estimation
+  // Get token holders - using transfer-based estimation since /owners endpoint doesn't exist
   async getTokenHolders(address: string, chain: string = 'eth', limit: number = 5): Promise<TokenHolder[]> {
     try {
-      console.log('🔍 Fetching real token holders for:', address)
+      console.log('🔍 Fetching token holders for:', address)
       
-      // First try to get real holders from the owners endpoint
-      try {
-        const holdersResponse = await this.makeRequest<{ result: any[] }>(`/erc20/${address}/owners?chain=${chain}&limit=${limit}`)
-        console.log('Real holders response:', holdersResponse)
-        
-        if (holdersResponse.result && holdersResponse.result.length > 0) {
-          console.log('✅ Found real holders data')
-          
-          // Calculate total balance for percentage calculation
-          const totalBalance = holdersResponse.result.reduce((sum, holder) => {
-            return sum + parseFloat(holder.balance || '0')
-          }, 0)
-          
-          return holdersResponse.result.map(holder => ({
-            owner_address: holder.owner_address || holder.ownerAddress || '',
-            balance: holder.balance || '0',
-            share: totalBalance > 0 ? (parseFloat(holder.balance || '0') / totalBalance) * 100 : 0
-          }))
-        }
-      } catch (error) {
-        console.warn('Failed to get real holders, falling back to transfer-based estimation:', error)
-      }
+      // Since /owners endpoint doesn't exist in Moralis API, use transfer-based estimation
+      console.log('📊 Using transfer-based holder estimation (no /owners endpoint available)')
+      const transfers = await this.makeRequest<{ result: any[] }>(`/erc20/${address}/transfers?chain=${chain}&limit=100`)
       
-      // Fallback: estimate holders from transfers (less accurate but better than nothing)
-      console.log('📊 Falling back to transfer-based holder estimation')
-      const transfers = await this.makeRequest<{ result: any[] }>(`/erc20/${address}/transfers?chain=${chain}&limit=${limit * 6}`)
-      
-      const holders = new Map<string, { value: number, count: number }>()
+      const holders = new Map<string, { value: number, count: number, lastActivity: number }>()
       
       if (transfers.result) {
         transfers.result.forEach(transfer => {
@@ -296,30 +284,59 @@ class MoralisAPIFixed {
           const toAddr = transfer.to_address || transfer.toAddress
           const value = parseFloat(transfer.value || '0')
           
+          // Parse timestamp for activity tracking
+          let transferTime = 0
+          if (transfer.block_timestamp) {
+            transferTime = new Date(transfer.block_timestamp).getTime()
+          } else if (transfer.blockTimestamp) {
+            transferTime = new Date(transfer.blockTimestamp).getTime()
+          } else if (transfer.timestamp) {
+            transferTime = new Date(transfer.timestamp).getTime()
+          }
+          
           if (fromAddr && fromAddr !== '0x0000000000000000000000000000000000000000') {
-            const current = holders.get(fromAddr) || { value: 0, count: 0 }
-            holders.set(fromAddr, { value: current.value + value, count: current.count + 1 })
+            const current = holders.get(fromAddr) || { value: 0, count: 0, lastActivity: 0 }
+            holders.set(fromAddr, { 
+              value: current.value + value, 
+              count: current.count + 1,
+              lastActivity: Math.max(current.lastActivity, transferTime)
+            })
           }
           
           if (toAddr && toAddr !== '0x0000000000000000000000000000000000000000') {
-            const current = holders.get(toAddr) || { value: 0, count: 0 }
-            holders.set(toAddr, { value: current.value + value, count: current.count + 1 })
+            const current = holders.get(toAddr) || { value: 0, count: 0, lastActivity: 0 }
+            holders.set(toAddr, { 
+              value: current.value + value, 
+              count: current.count + 1,
+              lastActivity: Math.max(current.lastActivity, transferTime)
+            })
           }
         })
       }
       
-      const totalValue = Array.from(holders.values()).reduce((sum, h) => sum + h.value, 0)
+      // Calculate total value and filter out very old inactive addresses
+      const now = Date.now()
+      const oneMonthAgo = now - (30 * 24 * 60 * 60 * 1000)
       
-      const holderArray = Array.from(holders.entries())
+      const activeHolders = Array.from(holders.entries())
+        .filter(([_, data]) => data.lastActivity > oneMonthAgo) // Only include addresses active in last month
         .sort((a, b) => b[1].value - a[1].value)
         .slice(0, limit)
-        .map(([address, data]) => ({
-          owner_address: address,
-          balance: data.value.toString(),
-          share: totalValue > 0 ? (data.value / totalValue) * 100 : 0
-        }))
       
-      console.log('📊 Estimated holders from transfers:', holderArray.length)
+      const totalValue = activeHolders.reduce((sum, [_, data]) => sum + data.value, 0)
+      
+      const holderArray = activeHolders.map(([address, data]) => ({
+        owner_address: address,
+        balance: data.value.toString(),
+        share: totalValue > 0 ? (data.value / totalValue) * 100 : 0
+      }))
+      
+      console.log('📊 Estimated holders from transfers:', {
+        totalUniqueAddresses: holders.size,
+        activeAddresses: activeHolders.length,
+        topHolders: holderArray.length
+      })
+      
       return holderArray
     } catch (error) {
       console.error('❌ Failed to get holders:', error)

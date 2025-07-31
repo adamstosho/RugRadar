@@ -13,9 +13,9 @@ export async function testMoralisAPI() {
   const testAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7' // USDT
   
   try {
-    // Test 1: Basic transfers endpoint
+    // Test 1: Basic transfers endpoint (limit 100 - max allowed)
     console.log('📡 Testing transfers endpoint...')
-    const transfersResponse = await fetch(`${BASE_URL}/erc20/${testAddress}/transfers?chain=eth&limit=5`, {
+    const transfersResponse = await fetch(`${BASE_URL}/erc20/${testAddress}/transfers?chain=eth&limit=100`, {
       headers: {
         'X-API-Key': API_KEY,
         'Content-Type': 'application/json',
@@ -60,29 +60,7 @@ export async function testMoralisAPI() {
       })
     }
 
-    // Test 3: Token owners (holders)
-    console.log('📡 Testing token owners...')
-    const ownersResponse = await fetch(`${BASE_URL}/erc20/${testAddress}/owners?chain=eth&limit=5`, {
-      headers: {
-        'X-API-Key': API_KEY,
-        'Content-Type': 'application/json',
-      },
-    })
-    
-    console.log('Owners Status:', ownersResponse.status)
-    
-    if (!ownersResponse.ok) {
-      const errorText = await ownersResponse.text()
-      console.error('Owners Error:', errorText)
-    } else {
-      const ownersData = await ownersResponse.json()
-      console.log('✅ Owners Response:', {
-        total: ownersData.total,
-        resultCount: ownersData.result?.length || 0
-      })
-    }
-
-    // Test 4: Token prices
+    // Test 3: Token prices
     console.log('📡 Testing token prices...')
     const pricesResponse = await fetch(`${BASE_URL}/erc20/prices`, {
       method: 'POST',
@@ -119,6 +97,110 @@ export async function testMoralisAPI() {
 
   } catch (error) {
     console.error('❌ API test failed:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
+// Detailed test to check transfer and holder data accuracy
+export async function testTransferAndHolderAccuracy() {
+  console.log('🔍 Testing transfer and holder data accuracy...')
+  
+  if (!API_KEY) {
+    throw new Error('API key not configured')
+  }
+
+  const testAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7' // USDT
+  
+  try {
+    // Test transfers with different limits to see what we get
+    console.log('📡 Testing transfers with different limits...')
+    
+    const limits = [10, 50, 100]
+    for (const limit of limits) {
+      console.log(`\n--- Testing with limit ${limit} ---`)
+      
+      const response = await fetch(`${BASE_URL}/erc20/${testAddress}/transfers?chain=eth&limit=${limit}`, {
+        headers: {
+          'X-API-Key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log(`Limit ${limit}:`, {
+          total: data.total,
+          resultCount: data.result?.length || 0,
+          hasTotal: !!data.total,
+          sampleTransfer: data.result?.[0] ? {
+            from: data.result[0].from_address,
+            to: data.result[0].to_address,
+            value: data.result[0].value,
+            timestamp: data.result[0].block_timestamp
+          } : 'None'
+        })
+      } else {
+        console.log(`Limit ${limit} failed:`, response.status)
+      }
+    }
+
+    // Test holder estimation logic
+    console.log('\n📊 Testing holder estimation logic...')
+    const transfersResponse = await fetch(`${BASE_URL}/erc20/${testAddress}/transfers?chain=eth&limit=100`, {
+      headers: {
+        'X-API-Key': API_KEY,
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (transfersResponse.ok) {
+      const transfersData = await transfersResponse.json()
+      
+      // Simulate the holder estimation logic
+      const holders = new Map<string, { value: number, count: number }>()
+      
+      if (transfersData.result) {
+        transfersData.result.forEach((transfer: any) => {
+          const fromAddr = transfer.from_address
+          const toAddr = transfer.to_address
+          const value = parseFloat(transfer.value || '0')
+          
+          if (fromAddr && fromAddr !== '0x0000000000000000000000000000000000000000') {
+            const current = holders.get(fromAddr) || { value: 0, count: 0 }
+            holders.set(fromAddr, { value: current.value + value, count: current.count + 1 })
+          }
+          
+          if (toAddr && toAddr !== '0x0000000000000000000000000000000000000000') {
+            const current = holders.get(toAddr) || { value: 0, count: 0 }
+            holders.set(toAddr, { value: current.value + value, count: current.count + 1 })
+          }
+        })
+      }
+      
+      console.log('Holder estimation results:', {
+        uniqueAddresses: holders.size,
+        totalTransfers: transfersData.total || transfersData.result?.length || 0,
+        topHolders: Array.from(holders.entries())
+          .sort((a, b) => b[1].value - a[1].value)
+          .slice(0, 5)
+          .map(([addr, data]) => ({
+            address: addr.slice(0, 10) + '...',
+            value: data.value,
+            count: data.count
+          }))
+      })
+    }
+
+    return {
+      success: true,
+      message: 'Transfer and holder accuracy test completed'
+    }
+
+  } catch (error) {
+    console.error('❌ Transfer and holder accuracy test failed:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'

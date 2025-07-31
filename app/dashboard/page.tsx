@@ -13,7 +13,8 @@ import ApiDebugPanel from "@/components/api-debug-panel"
 import { useTokenAnalysis } from "@/hooks/use-token-analysis"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Info, Bug, TestTube } from "lucide-react"
-import { testAPIFromBrowser } from "@/lib/test-api"
+import Logo from '@/components/logo'
+import { testAPIFromBrowser, testTransferAndHolderAccuracy } from "@/lib/test-api"
 
 export default function Dashboard() {
   const { tokenData, isLoading, error, analyzeToken, reset } = useTokenAnalysis()
@@ -21,6 +22,8 @@ export default function Dashboard() {
   const [showDebug, setShowDebug] = useState(false)
   const [testResult, setTestResult] = useState<any>(null)
   const [isTesting, setIsTesting] = useState(false)
+  const [accuracyTestResult, setAccuracyTestResult] = useState<any>(null)
+  const [isAccuracyTesting, setIsAccuracyTesting] = useState(false)
 
   const handleSearch = async (address: string) => {
     setTokenAddress(address)
@@ -48,15 +51,31 @@ export default function Dashboard() {
     }
   }
 
+  const handleAccuracyTest = async () => {
+    setIsAccuracyTesting(true)
+    setAccuracyTestResult(null)
+    try {
+      const result = await testTransferAndHolderAccuracy()
+      setAccuracyTestResult(result)
+    } catch (error) {
+      setAccuracyTestResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+    } finally {
+      setIsAccuracyTesting(false)
+    }
+  }
+
   return (
     <ErrorBoundary>
       <div className="min-h-screen bg-[#1F1F1F] text-white">
         <div className="container mx-auto px-4 py-8">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-              RugRadar
-            </h1>
+            <div className="flex justify-center mb-4">
+              <Logo size="lg" className="text-4xl md:text-6xl" />
+            </div>
             <p className="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto">
               Analyze ERC-20 tokens for potential security risks and rug pull indicators using advanced Web3 analytics
             </p>
@@ -81,7 +100,7 @@ export default function Dashboard() {
 
           {/* API Test Section */}
           <div className="max-w-2xl mx-auto mb-8">
-            <div className="flex items-center gap-4 justify-center">
+            <div className="flex items-center gap-4 justify-center flex-wrap">
               <button
                 onClick={handleTestAPI}
                 disabled={isTesting}
@@ -89,6 +108,15 @@ export default function Dashboard() {
               >
                 <TestTube className="h-4 w-4" />
                 {isTesting ? 'Testing API...' : 'Test API Connection'}
+              </button>
+              
+              <button
+                onClick={handleAccuracyTest}
+                disabled={isAccuracyTesting}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 rounded-lg transition-colors"
+              >
+                <TestTube className="h-4 w-4" />
+                {isAccuracyTesting ? 'Testing Accuracy...' : 'Test Data Accuracy'}
               </button>
               
               <button
@@ -100,15 +128,26 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* Test Result */}
-            {testResult && (
-              <div className="mt-4">
-                <Alert className={testResult.success ? "bg-green-900/20 border-green-600/30" : "bg-red-900/20 border-red-600/30"}>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className={testResult.success ? "text-green-300" : "text-red-300"}>
-                    {testResult.success ? '✅ API is working correctly!' : `❌ API Error: ${testResult.error}`}
-                  </AlertDescription>
-                </Alert>
+            {/* Test Results */}
+            {(testResult || accuracyTestResult) && (
+              <div className="mt-4 space-y-4">
+                {testResult && (
+                  <Alert className={testResult.success ? "bg-green-900/20 border-green-600/30" : "bg-red-900/20 border-red-600/30"}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className={testResult.success ? "text-green-300" : "text-red-300"}>
+                      {testResult.success ? '✅ API is working correctly!' : `❌ API Error: ${testResult.error}`}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {accuracyTestResult && (
+                  <Alert className={accuracyTestResult.success ? "bg-green-900/20 border-green-600/30" : "bg-red-900/20 border-red-600/30"}>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className={accuracyTestResult.success ? "text-green-300" : "text-red-300"}>
+                      {accuracyTestResult.success ? '✅ Data accuracy test completed! Check console for details.' : `❌ Accuracy Test Error: ${accuracyTestResult.error}`}
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
             )}
           </div>

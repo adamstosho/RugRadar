@@ -6,10 +6,17 @@ import "./globals.css"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rug Pull Detector - Web3 Token Security Analysis",
+  title: "RugRadar - Advanced Web3 Token Security Analysis",
   description:
-    "Analyze ERC-20 tokens for potential security risks and rug pull indicators using advanced Web3 analytics powered by Moralis APIs",
-    generator: 'v0.dev'
+    "RugRadar is an advanced Web3 security platform that detects potential rug pulls and analyzes ERC-20 tokens using real-time blockchain data and AI-powered risk assessment",
+  keywords: "rug pull detector, token security, Web3 analytics, blockchain security, DeFi safety, token analysis",
+  authors: [{ name: "RugRadar Team" }],
+  generator: 'Next.js',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  }
 }
 
 export default function RootLayout({
