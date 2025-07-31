@@ -147,7 +147,25 @@ The dashboard will display comprehensive analysis including:
 - **Green indicators**: Low risk, safe to consider
 - **Yellow indicators**: Moderate risk, proceed with caution
 - **Red indicators**: High risk, avoid investment
-- **Data accuracy notices**: Understand estimation limitations
+- **Data accuracy notices**: Understand estimation 
+
+# Preview of the App Interface (Screenshot)
+
+![screenshot](/public/screenshots/screencapture-rugradar-vercel-app-2025-07-31-18_45_15.png)
+The app's landing page
+
+![screenshot](/public/screenshots/screencapture-rugradar-vercel-app-dashboard-2025-07-31-18_45_28.png)
+App interface before pasting the contract address
+
+![screenshot](/public/screenshots/screencapture-rugradar-vercel-app-dashboard-2025-07-31-18_46_00.png)
+App analysis showing the low risk of the coin
+
+![screenshot](/public/screenshots/screencapture-rugradar-vercel-app-dashboard-2025-07-31-18_46_30.png)
+App analysis showing the high risk of the coin
+
+![screenshot](/public/screenshots/screencapture-rugradar-vercel-app-dashboard-2025-07-31-18_46_58.png)
+Same as above
+
 
 ## 🔧 Project Structure
 
