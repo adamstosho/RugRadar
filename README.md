@@ -1,42 +1,82 @@
-# 🚀 RugRadar
+# RugRadar 🛡️
 
-**Advanced Rug Pull Detection Platform**
+**Advanced Web3 Security Platform for Detecting Rug Pulls Before They Happen**
 
-A comprehensive Web3 token analysis tool built with Next.js, TypeScript, and Moralis Web3 API to detect potential rug pull risks in ERC-20 tokens using advanced AI algorithms and real-time blockchain data analysis.
+RugRadar is a comprehensive Web3 analytics platform that protects your cryptocurrency investments by providing real-time security analysis and risk assessment for ERC-20 tokens. Our advanced algorithms analyze multiple data points to identify potential rug pulls and malicious token projects before they can harm investors.
 
-## ✨ Features
+##  Problem We Solve
 
-- **Real-time Token Analysis**: Analyze any ERC-20 token using Moralis Web3 API
-- **Risk Scoring**: Advanced algorithm to calculate rug pull risk scores
-- **Token Metadata**: Complete token information including name, symbol, logo, and decimals
-- **Holder Analysis**: Top token holders with concentration analysis
-- **Transfer History**: Recent token transfers with transaction details
-- **Price Data**: Real-time USD and native token prices
-- **Risk Factors**: Detailed breakdown of identified risk factors
-- **Beautiful UI**: Modern, responsive design with dark theme
+The cryptocurrency market is filled with malicious token projects that can result in significant financial losses for investors. Rug pulls, where developers abandon projects and steal investor funds, are becoming increasingly common. RugRadar addresses this critical issue by:
 
-## 🛠️ Tech Stack
+- **Preventing Financial Losses**: Identify risky tokens before investing
+- **Real-time Monitoring**: Detect suspicious activities as they happen
+- **Data Transparency**: Provide clear, understandable risk assessments
+- **Community Protection**: Help protect the entire Web3 community
 
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS, shadcn/ui components
-- **API**: Moralis Web3 Data API
-- **State Management**: React hooks with custom useTokenAnalysis hook
-- **Icons**: Lucide React
+##  Key Features
 
-## 🚀 Getting Started
+###  **Advanced Security Analysis**
+- Comprehensive risk assessment using multiple data points
+- AI-powered algorithms for pattern recognition
+- Real-time threat detection and alerts
+
+###  **Token Analytics Dashboard**
+- **Risk Analysis Card**: Detailed risk scoring and factor breakdown
+- **Token Overview**: Complete token information and metadata
+- **Transfer History**: Real-time transaction monitoring
+- **Holder Analysis**: Distribution and concentration analysis
+
+###  **Risk Assessment Features**
+- **Transfer Activity Analysis**: Monitor transaction patterns
+- **Holder Concentration**: Identify whale dominance
+- **Liquidity Analysis**: Assess market stability
+- **Price Volatility**: Track suspicious price movements
+- **24h Volume Tracking**: Monitor trading activity
+
+###  **Modern User Interface**
+- Beautiful, responsive design with dark theme
+- Smooth animations and transitions
+- Mobile-friendly interface
+- Real-time data updates
+
+##  Technology Stack
+
+### **Frontend**
+- **React 19** - Modern React with latest features
+- **Next.js 15** - Full-stack React framework
+- **TypeScript** - Type-safe JavaScript development
+- **Tailwind CSS** - Utility-first CSS framework
+- **Framer Motion** - Smooth animations and transitions
+
+### **UI Components**
+- **Radix UI** - Accessible component primitives
+- **Lucide React** - Beautiful icon library
+- **Shadcn/ui** - Modern component library
+- **React Hook Form** - Form handling and validation
+
+### **Backend & APIs**
+- **Moralis Web3 API** - Blockchain data and analytics
+- **Ethereum Integration** - ERC-20 token analysis
+- **Real-time Data** - Live blockchain monitoring
+
+### **Development Tools**
+- **ESLint** - Code linting and quality
+- **PostCSS** - CSS processing
+- **Autoprefixer** - CSS vendor prefixing
+
+## Getting Started
 
 ### Prerequisites
-
 - Node.js 18+ 
 - npm, yarn, or pnpm
-- Moralis API key
+- Moralis API key (for blockchain data)
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
-   cd rug-pull-detector
+   git clone https://github.com/yourusername/rugradar.git
+   cd rugradar
    ```
 
 2. **Install dependencies**
@@ -49,17 +89,10 @@ A comprehensive Web3 token analysis tool built with Next.js, TypeScript, and Mor
    ```
 
 3. **Set up environment variables**
-   
    Create a `.env.local` file in the root directory:
    ```env
    NEXT_PUBLIC_MORALIS_API_KEY=your_moralis_api_key_here
-   NEXT_PUBLIC_MORALIS_API_BASE=https://deep-index.moralis.io/api/v2
    ```
-
-   **Get your Moralis API key:**
-   - Sign up at [Moralis](https://moralis.io/)
-   - Create a new project
-   - Copy your API key from the project settings
 
 4. **Run the development server**
    ```bash
@@ -71,157 +104,153 @@ A comprehensive Web3 token analysis tool built with Next.js, TypeScript, and Mor
    ```
 
 5. **Open your browser**
-   
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 📊 API Integration
+## 📖 How to Use RugRadar
 
-The project uses Moralis Web3 Data API with the following endpoints:
+### **Step 1: Access the Dashboard**
+- Visit the homepage and click "Start Analysis"
+- Or navigate directly to `/dashboard`
 
-### Token Metadata
-```
-GET /erc20/{address}/metadata?chain=eth
-```
-Returns token name, symbol, logo, decimals, and spam indicators.
+### **Step 2: Enter Token Address**
+- Paste any ERC-20 token contract address in the search bar
+- Supported formats: `0x...` (Ethereum addresses)
+- Click "Analyze Token" to begin
 
-### Token Statistics
-```
-GET /erc20/{address}/stats?chain=eth
-```
-Provides total transfers, holders, liquidity, volume, and price change data.
+### **Step 3: Review Analysis Results**
+The dashboard will display comprehensive analysis including:
 
-### Token Holders
-```
-GET /erc20/{address}/transfers?chain=eth&limit=100
-```
-Returns estimated token holders based on transfer analysis (Moralis doesn't provide direct holder data).
+#### **Risk Analysis Card**
+- **Total Transfers**: Transaction activity level
+- **Token Holders**: Distribution analysis
+- **Total Liquidity**: Market stability assessment
+- **24h Volume**: Recent trading activity
+- **Risk Factors**: Detailed risk breakdown
 
-### Token Transfers
-```
-GET /erc20/{address}/transfers?chain=eth&limit=100
-```
-Returns recent token transfers with transaction details (limit 100 max for free tier).
-Fetches recent token transfers with transaction details.
+#### **Token Overview**
+- Token name, symbol, and logo
+- Current price and 24h change
+- Risk score (0-100 scale)
+- Security status indicators
 
-### Token Price
-```
-POST /erc20/prices
-```
-Returns current USD and native token prices.
+#### **Transfer History**
+- Recent transactions
+- Transaction details and timestamps
+- Gas usage analysis
 
-## 🧠 Risk Analysis Algorithm
+#### **Holder Analysis**
+- Top token holders
+- Concentration percentages
+- Distribution patterns
 
-The risk scoring system evaluates multiple factors:
+### **Step 4: Interpret Results**
+- **Green indicators**: Low risk, safe to consider
+- **Yellow indicators**: Moderate risk, proceed with caution
+- **Red indicators**: High risk, avoid investment
+- **Data accuracy notices**: Understand estimation limitations
 
-- **Spam Detection**: Tokens flagged as possible spam (+30 points)
-- **Holder Concentration**: Top holder percentage analysis (+15-25 points)
-- **Total Holders**: Number of unique token holders (+10-20 points)
-- **Liquidity**: Total liquidity assessment (+10-20 points)
-- **Transfer Activity**: Transaction volume analysis (+8-15 points)
-- **Price Volatility**: 24h price change analysis (+15 points)
-
-**Risk Levels:**
-- **0-30**: Low Risk (Green)
-- **31-70**: Medium Risk (Yellow)
-- **71-100**: High Risk (Red)
-
-## 🎯 Usage
-
-1. **Enter Token Address**: Paste any ERC-20 token contract address
-2. **Analyze**: Click "Analyze Token" to fetch comprehensive data
-3. **Review Results**: Examine the risk score, factors, and detailed metrics
-4. **Investigate Further**: Use provided Etherscan links for additional research
-
-## 📁 Project Structure
+## 🔧 Project Structure
 
 ```
-rug-pull-detector/
+rugradar/
 ├── app/                    # Next.js app directory
-│   ├── page.tsx           # Main application page
+│   ├── dashboard/         # Main dashboard page
+│   ├── globals.css        # Global styles
 │   ├── layout.tsx         # Root layout
-│   └── globals.css        # Global styles
+│   └── page.tsx           # Homepage
 ├── components/            # React components
-│   ├── ui/               # shadcn/ui components
-│   ├── search-bar.tsx    # Token search interface
-│   ├── token-overview.tsx # Token metadata display
-│   ├── risk-analysis-card.tsx # Risk metrics
-│   ├── holders-list.tsx  # Top holders analysis
-│   ├── transfers-table.tsx # Transfer history
-│   └── flow-visualizer.tsx # Visual risk indicator
+│   ├── ui/               # Reusable UI components
+│   ├── risk-analysis-card.tsx
+│   ├── token-overview.tsx
+│   ├── transfers-table.tsx
+│   └── search-bar.tsx
 ├── hooks/                # Custom React hooks
-│   └── use-token-analysis.ts # API state management
-├── lib/                  # Utility libraries
-│   ├── api.ts           # Moralis API service
+│   └── use-token-analysis.ts
+├── lib/                  # Utility functions and APIs
+│   ├── api.ts           # API types and interfaces
+│   ├── api-fixed.ts     # Moralis API implementation
 │   └── utils.ts         # Helper functions
-└── public/              # Static assets
+├── public/              # Static assets
+└── styles/              # Additional stylesheets
 ```
 
-## 🔧 Customization
+##  Data Accuracy & Limitations
 
-### Adding New Risk Factors
+### **Real Data Available**
+- Token metadata (name, symbol, decimals)
+- Recent transfers (last 100 transactions)
+- Price data (when available)
+- 24h price changes
 
-Edit the `calculateRiskScore` method in `lib/api.ts`:
+### **Estimated Data**
+- Total transfer counts (when > 1000)
+- Holder counts (always estimated)
+- 24h volume (calculated from samples)
 
-```typescript
-// Add new risk factor
-if (someCondition) {
-  riskScore += points
-  riskFactors.push('Description of risk factor')
-}
-```
+### **Unavailable Data**
+- Real-time liquidity (requires DEX integration)
+- Total supply (not easily accessible)
+- Real-time holder balances
 
-### Modifying API Endpoints
+**Note**: RugRadar clearly indicates when data is estimated vs. real to ensure transparency.
 
-Update the Moralis API service in `lib/api.ts`:
+##  Deployment
 
-```typescript
-async getCustomData(address: string, chain: string = 'eth') {
-  return this.makeRequest(`/custom/endpoint?chain=${chain}`)
-}
-```
+### **Vercel (Recommended)**
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically
 
-### Styling Changes
+### **Other Platforms**
+- **Netlify**: Compatible with Next.js
+- **Railway**: Easy deployment with environment variables
+- **AWS/GCP**: Use Docker containers
 
-The project uses Tailwind CSS with a dark theme. Modify `app/globals.css` or component classes for styling updates.
+##  Contributing
 
-## 🔧 Recent Fixes & API Limitations
+We welcome contributions from the community! Here's how you can help:
 
-### Fixed Issues
-- **404 Error for `/owners` endpoint**: Removed calls to non-existent Moralis endpoint
-- **400 Error for transfer limit**: Reduced limit from 500 to 100 (Moralis free tier maximum)
-- **Holder data estimation**: Now uses transfer-based estimation since direct holder data isn't available
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit your changes**: `git commit -m 'Add amazing feature'`
+4. **Push to the branch**: `git push origin feature/amazing-feature`
+5. **Open a Pull Request**
 
-### API Limitations
-- **Transfer limit**: Maximum 100 transfers per request (free tier)
-- **Holder data**: Not directly available from Moralis API, estimated from transfers
-- **Liquidity data**: Not available from Moralis API (requires DEX integration)
-
-### Workarounds
-- Holder count estimated from transfer patterns
-- Transfer totals calculated from available data
-- Risk scoring adjusted for data limitations
-
-## 🚨 Disclaimer
+### **Development Guidelines**
+- Follow TypeScript best practices
+- Use meaningful commit messages
+- Test your changes thoroughly
+- Update documentation as needed
 
 ## 📝 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🤝 Contributing
+##  Acknowledgments
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+- **Moralis** for providing excellent Web3 APIs
+- **Next.js team** for the amazing framework
+- **Vercel** for seamless deployment
+- **Web3 community** for inspiration and feedback
 
-## 📞 Support
+##  Support
 
-For questions or issues:
-- Create an issue in the repository
-- Check the [Moralis documentation](https://docs.moralis.com/)
-- Review the API integration guide above
+- **GitHub Issues**: Report bugs and request features
+- **Documentation**: Check this README and code comments
+- **Community**: Join our discussions and share feedback
+
+## 🔮 Roadmap
+
+- [ ] DEX integration for real liquidity data
+- [ ] Multi-chain support (BSC, Polygon, etc.)
+- [ ] Advanced AI risk prediction
+- [ ] Community-driven risk reports
+- [ ] Mobile app development
+- [ ] API for third-party integrations
 
 ---
 
-**Built with ❤️ using Next.js and Moralis Web3 API** 
+**Built with ❤️ by ART_Redox for the Web3 community**
+
+*Protect your investments. Detect rug pulls before they happen.* 
